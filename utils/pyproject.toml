@@ -1,0 +1,8 @@
+[project]
+name = "initial-extension-setup"
+version = "0.1.0"
+description = "Sets up Concentriq analysis app for results exporting and neccesary user-defined fields"
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.31",
+]

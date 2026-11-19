@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<?import javafx.geometry.Insets?>
+<fx:root type="VBox" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="400" xmlns="http://javafx.com/javafx/20" xmlns:fx="http://javafx.com/fxml/1">
+    <VBox spacing="5" alignment="CENTER_RIGHT" fillWidth="true" maxWidth="Infinity">
+        <padding>
+            <Insets topRightBottomLeft="3"/>
+        </padding>
+        <HBox spacing="2" alignment="CENTER_LEFT">
+            <Label text="API URL:" minWidth="60"/>
+            <TextField fx:id="concentriqUrl" text="https://cumc-dcpl.concentriq.proscia.com" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+            </TextField>
+        </HBox>
+        <HBox spacing="2" alignment="CENTER_LEFT">
+            <Label text="API Key:" minWidth="60"/>
+            <PasswordField fx:id="concentriqAPIKey" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+            </PasswordField>
+        </HBox>
+        <HBox spacing="2" alignment="CENTER_LEFT">
+            <Label text="App ID for Analysis Export:" minWidth="60"/>
+            <TextField fx:id="analysisExportAppId" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+            </TextField>
+        </HBox>
+        <HBox spacing="2" alignment="CENTER_LEFT">
+            <Label text="Analysis Requestor Username Field Key:" minWidth="60"/>
+            <TextField fx:id="qupathAnalysisSenderFieldKey" text="qupath_analysis_sender" maxWidth="Infinity" HBox.hgrow="ALWAYS">
+            </TextField>
+        </HBox>
+    </VBox>
+</fx:root>

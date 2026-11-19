@@ -1,0 +1,85 @@
+# Place this file at: .github/workflows/release.yml
+#
+# Direct port of the .gitlab-ci.yml build_jar + create_release pipeline.
+# Differences from the GitLab version (see chat for details):
+#   - Artifacts must be explicitly uploaded/downloaded between jobs (GitHub doesn't
+#     pass them along automatically the way GitLab's `needs: artifacts: true` does).
+#   - The release asset is the actual uploaded jar file, not a link to a job artifact -
+#     it won't expire the way the GitLab artifact link would have (expire_in: 1 week).
+#   - There's no built-in "release:" keyword; this uses softprops/action-gh-release,
+#     the standard community action for creating GitHub Releases from a workflow.
+#   - Builds directly on the ubuntu-latest runner via actions/setup-java +
+#     gradle/actions/setup-gradle, instead of running inside the gradle:8-jdk17
+#     container (matching GitLab's `image:`). This is more idiomatic for GitHub
+#     Actions and gets automatic Gradle dependency/build caching for free.
+
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  # Mirrors ARTIFACT_NAME from .gitlab-ci.yml
+  ARTIFACT_NAME: qupath-extension-concentriq-1.0.0-beta.1-tumbling-turkey
+
+jobs:
+  build_jar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build
+        run: ./gradlew build
+
+      - name: List built jars
+        run: ls build/libs
+
+      # GitLab's `artifacts:` block (with expire_in: 1 week) becomes an explicit
+      # upload step here. This is the intermediate build artifact passed to the
+      # next job - not the same thing as the permanent release asset below.
+      - name: Upload jar as build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: build/libs/${{ env.ARTIFACT_NAME }}.jar
+          retention-days: 7
+
+  create_release:
+    needs: build_jar
+    runs-on: ubuntu-latest
+    # Required for softprops/action-gh-release to be able to create a release
+    # and upload assets using the automatically-provided GITHUB_TOKEN.
+    permissions:
+      contents: write
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: build/libs
+
+      - name: Compute short SHA
+        id: vars
+        run: echo "sha_short=$(echo "$GITHUB_SHA" | cut -c1-8)" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Release ${{ steps.vars.outputs.sha_short }}"
+          tag_name: "v-${{ steps.vars.outputs.sha_short }}"
+          target_commitish: ${{ github.sha }}
+          body: "Automatic release from branch implement-concentriq-ext"
+          files: build/libs/${{ env.ARTIFACT_NAME }}.jar
+
