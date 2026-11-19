@@ -22,7 +22,7 @@ on:
 
 env:
   # Mirrors ARTIFACT_NAME from .gitlab-ci.yml
-  ARTIFACT_NAME: qupath-extension-concentriq-1.0.0-beta.1-tumbling-turkey
+  ARTIFACT_NAME: qupath-extension-concentriq-1.0.0-tumbling-turkey
 
 jobs:
   build_jar:
