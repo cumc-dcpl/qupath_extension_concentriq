@@ -2,15 +2,20 @@ name: Build and Release
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*.*.*'
 
 env:
-  ARTIFACT_NAME: qupath-extension-concentriq-1.0.0-tumbling-turkey
+  # Folded only into the jar filename below - never into the git tag or the catalog.json
+  # Release.name field, which must stay strict semver (vX.Y.Z) per the
+  # QuPath extension-catalog-model's validation.
+  CODENAME: tumbling-turkey
 
 jobs:
   build_jar:
     runs-on: ubuntu-latest
+    outputs:
+      artifact_name: ${{ steps.version.outputs.artifact_name }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -24,17 +29,39 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # gradlew needs its executable bit set to run directly.
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
       - name: Build
         run: ./gradlew build
 
       - name: List built jars
         run: ls build/libs
 
+      # Renames whatever jar Gradle actually produced to
+      # "qupath-extension-concentriq-<version>-<codename>.jar", with <version> taken directly
+      # from the pushed tag (v1.0.0 -> 1.0.0) - so the release asset filename always matches
+      # the release tag's version, with nothing to keep in sync by hand. The codename is just
+      # along for the ride in the filename; it never appears in the git tag or in a catalog.json
+      # Release.name field, which must stay strict semver.
+      # Assumes a single main jar in build/libs (excludes -sources.jar/-javadoc.jar, in case
+      # the build produces those too); adjust the grep/glob if your build is more involved.
+      - name: Rename jar to match release tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          ARTIFACT_NAME="qupath-extension-concentriq-$VERSION-$CODENAME"
+          echo "artifact_name=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
+          MAIN_JAR=$(ls build/libs/*.jar | grep -v -e '-sources.jar' -e '-javadoc.jar' | head -n1)
+          mv "$MAIN_JAR" "build/libs/$ARTIFACT_NAME.jar"
+
       - name: Upload jar as build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.ARTIFACT_NAME }}
-          path: build/libs/${{ env.ARTIFACT_NAME }}.jar
+          name: ${{ steps.version.outputs.artifact_name }}
+          path: build/libs/${{ steps.version.outputs.artifact_name }}.jar
+          retention-days: 7
 
   create_release:
     needs: build_jar
@@ -47,19 +74,14 @@ jobs:
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
-          name: ${{ env.ARTIFACT_NAME }}
+          name: ${{ needs.build_jar.outputs.artifact_name }}
           path: build/libs
-
-      - name: Compute short SHA
-        id: vars
-        run: echo "sha_short=$(echo "$GITHUB_SHA" | cut -c1-8)" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          name: "Release ${{ steps.vars.outputs.sha_short }}"
-          tag_name: "v-${{ steps.vars.outputs.sha_short }}"
+          name: "Release ${{ github.ref_name }}"
+          tag_name: ${{ github.ref_name }}
           target_commitish: ${{ github.sha }}
-          body: "Automatic release from branch implement-concentriq-ext"
-          files: build/libs/${{ env.ARTIFACT_NAME }}.jar
-
+          body: "Release ${{ github.ref_name }}"
+          files: build/libs/${{ needs.build_jar.outputs.artifact_name }}.jar
