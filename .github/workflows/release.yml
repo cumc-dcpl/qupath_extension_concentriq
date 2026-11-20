@@ -54,7 +54,13 @@ jobs:
           ARTIFACT_NAME="qupath-extension-concentriq-$VERSION-$CODENAME"
           echo "artifact_name=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
           MAIN_JAR=$(ls build/libs/*.jar | grep -v -e '-sources.jar' -e '-javadoc.jar' | head -n1)
-          mv "$MAIN_JAR" "build/libs/$ARTIFACT_NAME.jar"
+          TARGET_JAR="build/libs/$ARTIFACT_NAME.jar"
+          # Gradle's own configured jar name can already match the target name (e.g. if the
+          # project version in build.gradle.kts was set to literally include the codename), so
+          # only rename when source and destination actually differ.
+          if [ "$MAIN_JAR" != "$TARGET_JAR" ]; then
+            mv "$MAIN_JAR" "$TARGET_JAR"
+          fi
 
       - name: Upload jar as build artifact
         uses: actions/upload-artifact@v4
