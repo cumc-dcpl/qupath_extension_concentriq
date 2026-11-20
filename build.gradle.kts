@@ -11,12 +11,11 @@ plugins {
 qupathExtension {
     name = "qupath-extension-concentriq"
     group = "io.github.qupath"
-    version = "1.0.0-beta.1-tumbling-turkey"
+    version = "1.0.0-tumbling-turkey"
     description = "A QuPath extension to allow seamless integration between Qupath and the Proscia Concentriq Image Management System"
     automaticModule = "io.github.qupath.extension.template"
 }
 
-// TODO: Define your dependencies here
 dependencies {
 
     // Main dependencies for most QuPath extensions
@@ -25,9 +24,6 @@ dependencies {
     shadow(libs.qupath.fxtras)
     implementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")
     implementation("io.github.qupath:qupath-extension-svg:0.7.0")
-
-    // If you aren't using Groovy, this can be removed
-    shadow(libs.bundles.groovy)
 
     // For testing
     testImplementation(libs.bundles.qupath)
